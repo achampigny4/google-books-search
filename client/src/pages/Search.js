@@ -5,12 +5,12 @@ import { Link } from "react-router-dom";
 import { Col, Row, Container } from "../components/Grid";
 import { List, ListItem } from "../components/List";
 import { Input, FormBtn } from "../components/Form/form";
-import { DeleteBtn } from "../components/DeleteBtn/index";
+import Results from '../components/Results/Results';
 
-function Search() {
+const Search = () => {
   // Setting our component's initial state
-  const [books, setBooks] = useState([])
-  const [formObject, setFormObject] = useState({})
+  const [books, setBooks] = useState("Dummy");
+  const [userSearch, setUserSearch] = useState([]);
 
   // Load all books and store them with setBooks
   useEffect(() => {
@@ -19,40 +19,48 @@ function Search() {
 
   // Loads all books and sets them to books
   function loadBooks() {
-    API.getBooks()
-      .then(res => 
-        setBooks(res.data)
+    API.searchGoogle(userSearch)
+      .then(res =>
+        setBooks(res.data.items)
       )
       .catch(err => console.log(err));
   };
 
-  // Deletes a book from the database with a given id, then reloads books from the db
-  function deleteBook(id) {
-    API.deleteBook(id)
-      .then(res => loadBooks())
-      .catch(err => console.log(err));
-  }
-
   // Handles updating component state when the user types into the input field
   function handleInputChange(event) {
-    const { name, value } = event.target;
-    setFormObject({...formObject, [name]: value})
+    const { value } = event.target;
+    setUserSearch(value);
   };
 
-  // When the form is submitted, use the API.saveBook method to save the book data
-  // Then reload books from the database
+  // When the form is submitted, use the userSearch to load book data
   function handleFormSubmit(event) {
     event.preventDefault();
-    if (formObject.title) {
-      API.saveBook({
-        title: formObject.title
-      })
-        .then(res => loadBooks())
+    if (userSearch) {
+      loadBooks();
+      console.log(books);
+    };
+  };
+
+  //save book when save button selected
+  function handleBookSave(book) {
+    if (book.title) {
+      API.saveBook(
+        {
+          image: book.imageLinks.thumbnail,
+          title: book.title,
+          subtitle: book.subtitle,
+          authors: book.authors,
+          description: book.description,
+          link: book.infoLink
+        }
+      )
+        .then(res => console.log(res))
         .catch(err => console.log(err));
     }
   };
- 
-    return (
+
+  return (
+    <div>
       <Container fluid>
         <Row>
           <Col size="md-12">
@@ -68,33 +76,28 @@ function Search() {
                 placeholder="Title (required)"
               />
               <FormBtn
-                disabled={!(formObject.title)}
+                disabled={!(userSearch.title)}
                 onClick={handleFormSubmit}
               >
                 Search
               </FormBtn>
             </form>
-            {books.length ? (
-              <List>
-                {books.map(book => (
-                  <ListItem key={book._id}>
-                    <Link to={"/books/" + book._id}>
-                      <strong>
-                        {book.title} by {book.author}
-                      </strong>
-                    </Link>
-                    {/* <DeleteBtn onClick={() => deleteBook(book._id)} /> */}
-                  </ListItem>
-                ))}
-              </List>
-            ) : (
-              <h3>No Results to Display</h3>
-            )}
+
           </Col>
         </Row>
       </Container>
-    );
-  }
+      <br /><br />
+      <Container fluid>
+        <Row>
+          <Col size="md-12">
+            <h5>Results</h5>
+            <Results />
+          </Col>
+        </Row>
+      </Container>
+    </div>
+  );
+}
 
 
 export default Search;
